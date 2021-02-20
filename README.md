@@ -5,3 +5,6 @@
 
 #### Impacts at one grid on earth during the 500 Million Year Hadean period.
 ![Results](./figs/IMPAaCS_through_time_1_grid.png)
+
+#### SiO2 through time at one test cell
+![Results](./figs/test_time_series.png)
