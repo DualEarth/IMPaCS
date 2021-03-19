@@ -7,4 +7,5 @@
 ![Results](./figs/IMPAaCS_through_time_1_grid.png)
 
 #### SiO2 through time at one test cell
-![Results](./figs/test_time_series.png)
+![Results](./figs/test_time_series_sio2.png)
+![Results](./figs/test_time_series_diam.png)
