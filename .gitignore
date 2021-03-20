@@ -1,2 +1,6 @@
 z_old/*
 .ipynb_checkpoints/
+*.out
+*.error
+*.pkl
+__pycache__/*
