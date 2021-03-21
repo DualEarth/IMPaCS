@@ -13,6 +13,7 @@ assert egrid.shape == (406, 964)
 import impacts
 
 # Set the size bins
+max_diameter=330
 diam_bins = [5, 10, 50, 100]
 diam_labs = ['005', '005-009', '010-050', '050-100', '100+']
 diam_range = {'005':[1,5],'005-009':[5,9],'010-050':[10,50],'050-100':[50,100],'100+':[100,330]}
@@ -38,7 +39,9 @@ df_freq = pd.DataFrame.from_dict({'high':his_dict, 'low':los_dict,
                                   'lambda_start':lambda_start, 'lambda_end':lambda_end})
 df_freq['frequency_factor'] = [0.1,0.2,0.3,0.6,0.8]
 print("impact frequency")
-print(df_freq)
+with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+    print(df_freq)
+
 
 t_total=500
 
@@ -81,27 +84,35 @@ while not_converged:
     if good_numbers == df_freq.shape[0]:
         not_converged = False
 print("impact frequency")
-print(df_freq)
+with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+    print(df_freq)
 impact_time = np.linspace(0,fivehundredmillion,t_total+1)[1:]
 df = pd.DataFrame(data=hits, index=impact_time)
 
-I = impacts.IMPAaCS(egrid)
+ensemble_member=1
+I = impacts.IMPAaCS(egrid, ensemble=ensemble_member)
 # Loop through impacts, the df has them stored by time and diameter bn
 for it, t in enumerate(df.index.values):
     print('time', it)
-    for d in diam_labs[3:]:
+    for d in diam_labs[1:]:
         for i in range(int(df.loc[t,d])):
             # locate the the impacts on earth
-            impact_lat = random.randrange(-79,79)
+            impact_lat = random.randrange(-90,90)
             impact_lon = random.randrange(-180,180)
+            if np.abs(impact_lat) > 79:
+                continue
             impact_loc = [impact_lat, impact_lon]
             impactor_diameter = random.randrange(diam_range[d][0],diam_range[d][1])
                 
             #####      DO THE DYANMICS       #############################
             I.update(impact_loc, impactor_diameter, t)
 
-    with open('impact_states/impacts_1_{}.pkl'.format(it), 'wb') as f:
+    # make a map of the results at this time
+    I.plot_map()
+
+    with open('impact_states/impacts_E{}_t{}.pkl'.format(ensemble_member, it), 'wb') as f:
         pkl.dump(I.grid_cell_state, f, pkl.HIGHEST_PROTOCOL)
+
 print(I.test_time)
 print(I.average_test_target_list)
 print(I.top_layer_at_test_cell)
