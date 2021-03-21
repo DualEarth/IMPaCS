@@ -100,8 +100,8 @@ for it, t in enumerate(df.index.values):
             #####      DO THE DYANMICS       #############################
             I.update(impact_loc, impactor_diameter, t)
 
-    with open('impacts.pkl', 'wb') as f:
-        pkl.dump(I, f, pkl.HIGHEST_PROTOCOL)
+    with open('impact_states/impacts_1_{}.pkl'.format(it), 'wb') as f:
+        pkl.dump(I.grid_cell_state, f, pkl.HIGHEST_PROTOCOL)
 print(I.test_time)
 print(I.average_test_target_list)
 print(I.top_layer_at_test_cell)

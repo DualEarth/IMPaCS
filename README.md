@@ -9,3 +9,6 @@
 #### SiO2 through time at one test cell
 ![Results](./figs/test_time_series_sio2.png)
 ![Results](./figs/test_time_series_diam.png)
+
+#### SiO2 distrtibution in the top 2m of Earth after 500myr of impacts
+![Results](./figs/impacts-sio2-map.png)
