@@ -1,3 +1,5 @@
+*.zip
+*.mp4
 z_old/*
 .ipynb_checkpoints/
 *.out
@@ -5,4 +7,5 @@ z_old/*
 *.pkl
 __pycache__/*
 figs/maps/*
+figs/maps*
 impact_states/*
