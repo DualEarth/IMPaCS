@@ -90,16 +90,16 @@ impact_time = np.linspace(0,fivehundredmillion,t_total+1)[1:]
 df = pd.DataFrame(data=hits, index=impact_time)
 
 ensemble_member=1
-I = impacts.IMPAaCS(egrid, ensemble=ensemble_member)
+I = impacts.IMPAaCS(egrid, ensemble=ensemble_member, verbose=True)
 # Loop through impacts, the df has them stored by time and diameter bn
 for it, t in enumerate(df.index.values):
     print('time', it)
-    for d in diam_labs[1:]:
+    for d in diam_labs[2:]:
         for i in range(int(df.loc[t,d])):
             # locate the the impacts on earth
             impact_lat = random.randrange(-90,90)
             impact_lon = random.randrange(-180,180)
-            if np.abs(impact_lat) > 79:
+            if np.abs(impact_lat) > 45:
                 continue
             impact_loc = [impact_lat, impact_lon]
             impactor_diameter = random.randrange(diam_range[d][0],diam_range[d][1])
@@ -108,9 +108,9 @@ for it, t in enumerate(df.index.values):
             I.update(impact_loc, impactor_diameter, t)
 
     # make a map of the results at this time
-    I.plot_map()
+#    I.plot_map()
 
-    with open('impact_states/impacts_E{}_t{}.pkl'.format(ensemble_member, it), 'wb') as f:
+    with open('impact_states/impacts_10min_45lat_t{}.pkl'.format(it), 'wb') as f:
         pkl.dump(I.grid_cell_state, f, pkl.HIGHEST_PROTOCOL)
 
 print(I.test_time)

@@ -5,7 +5,9 @@ import pandas as pd
 import random
 from math import sin, cos, sqrt, atan2, radians
 from ease_grid import EASE2_grid
-from matplotlib import pyplot as plt
+import matplotlib
+matplotlib.use('Agg') # Must be before importing matplotlib.pyplot or pylab!
+import matplotlib.pyplot as plt
 
 # approximate radius of earth in km
 def distance(lat1,lat2,lon1,lon2):
@@ -26,16 +28,21 @@ def distance(lat1,lat2,lon1,lon2):
 
     return(distance) #km
 
+def re_bin_sio2(temp_state, s_min, s_max, ds):
+    for s in range(s_min,s_max,ds):
+        if temp_state<=s:
+            return s
+        elif temp_state>=s_max:
+            return s_max
+        else:
+            continue
+
 class IMPAaCS:
     
-    count_test_hits = 0
     impact_test_id = str(round(-87.5726,4))+' '+str(round(33.2921,4))
-    grid_cell_state = {}
-    impacted_grid_cells = []
-    impactors_at_test_cell = [0]
-    test_time = [0]
     
     def __init__(self, egrid, 
+                 verbose=False,
                  max_depth_of_impact_melt=330,
                  ensemble = 0,
                  primitive_initial_state=45,
@@ -47,6 +54,7 @@ class IMPAaCS:
                  proportion_melt_from_impact = 1/3,
                  sim_time=0):
         self.egrid = egrid
+        self.verbose=verbose
         self.ensemble=ensemble
         self.primitive_initial_state = primitive_initial_state
         self.max_depth_of_impact_melt = max_depth_of_impact_melt
@@ -64,6 +72,13 @@ class IMPAaCS:
         self.n_x = self.egrid.londim.shape[0]
         self.n_y = self.egrid.latdim.shape[0]
         self.sim_time=sim_time
+        
+        self.count_test_hits = 0
+        self.grid_cell_state = {}
+        self.impacted_grid_cells = []
+        self.impactors_at_test_cell = [0]
+        self.test_time = [0]
+        
         self.state_prep()
 
     #--------------------------------------------------------------------------------------------------
@@ -149,14 +164,16 @@ class IMPAaCS:
                 if D <= self.crator_radius:
                     self.impacted_grid_cells.append([ilon, ilat])
         if len(self.impacted_grid_cells) < 1:
-            print("Warning. There are no grids impacted!")
-            print('Dmin', Dmin, 'crator radius', self.crator_radius, 'impact location', impact_loc)
+            if self.verbose:
+                print("Warning. There are no grids impacted!")
+                print('Dmin', Dmin, 'crator radius', self.crator_radius, 'impact location', impact_loc)
             for ilon in self.egrid.londim:
                 for ilat in self.egrid.latdim:
                     D = distance(impact_loc[0],ilat,impact_loc[1],ilon)
                     if D == Dmin:
                         self.impacted_grid_cells.append([ilon, ilat])
-                        print('impacting grid cell', [ilon, ilat])
+                        if self.verbose:
+                            print('impacting grid cell', [ilon, ilat])
 
     #--------------------------------------------------------------------------------------------------    
     def loop_impact_grid(self, impactor_diameter):
@@ -185,18 +202,31 @@ class IMPAaCS:
             self.top_layer_at_test_cell.append(self.grid_cell_state[self.impact_test_id][0])
     
     #--------------------------------------------------------------------------------------------------
-    def plot_map(self):
+    def plot_map(self, save_figure=False, plot_figure=False):
+        s_min = 34
+        s_max = 70
+        ds = 2
+        if not plot_figure and not save_figure:
+            return
         z = np.zeros([self.n_x, self.n_y])
         for i, ilon in enumerate(self.egrid.londim):
             for j, ilat in enumerate(self.egrid.latdim):
                 grid_cell = str(round(ilon,4))+' '+str(round(ilat,4))
-                z[i, j] = np.mean(self.grid_cell_state[grid_cell][0:2])
+                temp_state = np.mean(self.grid_cell_state[grid_cell][0:2])
+                temp_state = re_bin_sio2(temp_state, s_min, s_max, ds)
+                z[i, j] = temp_state
         X, Y = np.meshgrid(self.egrid.londim, self.egrid.latdim)
-        plt.contourf(X, Y, np.transpose(z))
-        plt.colorbar()
-        plt.title('top 6-meter sio2 at time {}myr'.format(int(self.sim_time/1000000)))
-        plt.xlabel('longitude')
-        plt.ylabel('latitude')
-        plt.savefig('./figs/maps/E{}_sio2_map_at_time_{}myr.png'.format(self.ensemble, int(self.sim_time/1000000)), 
+        fig, ax1 = plt.subplots(figsize=(12, 5))
+        cs = ax1.contourf(X, Y, np.transpose(z), vmin=s_min, vmax=s_max) 
+        cbar = fig.colorbar(cs, ticks=range(s_min,s_max,ds))
+        ax1.set_title('top 2-meter sio2 at time {}myr.png'.format(int(self.sim_time/1000000)))
+        ax1.set_xlabel('longitude')
+        ax1.set_ylabel('latitude')
+        ax1.set_xlim([-90, 90])
+        ax1.set_ylim([-45, 45])
+        if save_figure:
+            plt.savefig('./figs/maps/sio2_map_at_time_{}myr.png'.format(int(self.sim_time/1000000)), 
                     bbox_inches='tight')
+        if plot_figure:
+            plt.show()
         plt.close()
