@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import pickle as pkl
 from matplotlib import pyplot as plt
+from matplotlib import cm
 import random
 from math import sin, cos, sqrt, atan2, radians
 from ease_grid import EASE2_grid
@@ -89,15 +90,17 @@ with pd.option_context('display.max_rows', None, 'display.max_columns', None):  
 impact_time = np.linspace(0,fivehundredmillion,t_total+1)[1:]
 df = pd.DataFrame(data=hits, index=impact_time)
 
-for ensemble_member in range(3,4):
+list_impacts_export = list(range(0,500,20))
+list_impacts_export.append(499)
 
+for ensemble_member in range(6,10):
+    print("Running ensemble {}".format(ensemble_member))
     impact_boundz=20
     [-impact_boundz, impact_boundz]
-    Impc = impacts.IMPAaCS(egrid, max_depth_of_impact_melt=330, ensemble=ensemble_member, verbose=True, 
-                   x_lims = [-impact_boundz, impact_boundz], y_lims = [-impact_boundz, impact_boundz])
+    Impc = impacts.IMPAaCS(egrid, max_depth_of_impact_melt=330, ensemble=ensemble_member, verbose=False, 
+                   lon_lims = [-impact_boundz, impact_boundz], lat_lims = [-impact_boundz, impact_boundz])
     for it, t in enumerate(df.index.values):
         start_time = time.time()
-        print('time', it)
         for d in diam_labs:
             for i in range(int(df.loc[t,d])):
     
@@ -114,18 +117,22 @@ for ensemble_member in range(3,4):
                 #####      DO THE DYANMICS       #############################
                 Impc.update(impact_loc, impactor_diameter, t)
                 
-        Impc.do_sample_percents(Impc.x_lims,Impc.x_lims,n_layers=2)
+        Impc.do_sample_percents(n_layers=2)
         
         if it == 0:
             percent_df = pd.DataFrame(Impc.sample_percents, index=[it])
         else:
             percent_df = percent_df.append(Impc.sample_percents, ignore_index=True)
-        print(Impc.sample_percents)
-                
-#        print(Impc.test_time)
-#        print(Impc.average_test_target_list)
-#        print(Impc.top_layer_at_test_cell)
-        
-        print("elapsed time: {}".format(time.time() - start_time))
 
-    percent_df.to_csv("impact_percents_{}".format(ensemble_member))
+        if it in list_impacts_export:
+            print('time', it)
+            Impc.plot_map_and_bar(save_figure=True,plot_figure=False,fig_path="./figs/ensemble_figs/{}/".format(ensemble_member))
+            print("elapsed time: {}".format(time.time() - start_time))
+            print(percent_df.iloc[-1,:])
+            print(Impc.test_time)
+            print(Impc.average_test_target_list)
+            print(Impc.top_layer_at_test_cell)
+            with open('impact_states/ensembles/{}/{}.pkl'.format(ensemble_member, it), 'wb') as f:
+                pkl.dump(Impc.grid_cell_state, f, pkl.HIGHEST_PROTOCOL)
+    
+    percent_df.to_csv("sio2_percent_tables/ensemble_{}.csv".format(ensemble_member))
