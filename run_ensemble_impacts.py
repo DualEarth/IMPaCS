@@ -24,7 +24,7 @@ lambda_end = {'005':2,'005-009':4,'010-050':8,'050-100':16,'100+':32}
 list_impacts_export = list(range(0,500,20))
 list_impacts_export.append(499)
 # Loop through the ensemble members. Want to calculate the probabilities at each go.
-for ensemble_member in range(1,10):
+for ensemble_member in range(200,300):
 
 
     # Make dictionary with size bins and frequency
@@ -127,15 +127,15 @@ for ensemble_member in range(1,10):
         else:
             percent_df = percent_df.append(Impc.sample_percents, ignore_index=True)
 
-        if it in list_impacts_export:
-            print('time', it)
-            Impc.plot_map_and_bar(save_figure=False,plot_figure=False,fig_path="./figs/ensemble_figs/{}/".format(ensemble_member))
-            print("elapsed time: {}".format(time.time() - start_time))
-            print(percent_df.iloc[-1,:])
-            print(Impc.test_time)
-            print(Impc.average_test_target_list)
-            print(Impc.top_layer_at_test_cell)
-            with open('impact_states/ensembles_3June2021/{}/{}.pkl'.format(ensemble_member, it), 'wb') as f:
-                pkl.dump(Impc.grid_cell_state, f, pkl.HIGHEST_PROTOCOL)
+#        if it in list_impacts_export:
+#            print('time', it)
+#            Impc.plot_map_and_bar(save_figure=False,plot_figure=False,fig_path="./figs/ensemble_figs/{}/".format(ensemble_member))
+#            print("elapsed time: {}".format(time.time() - start_time))
+#            print(percent_df.iloc[-1,:])
+#            print(Impc.test_time)
+#            print(Impc.average_test_target_list)
+#            print(Impc.top_layer_at_test_cell)
+#            with open('impact_states/ensembles_3June2021/{}/{}.pkl'.format(ensemble_member, it), 'wb') as f:
+#                pkl.dump(Impc.grid_cell_state, f, pkl.HIGHEST_PROTOCOL)
     
     percent_df.to_csv("sio2_percent_tables/3june2021/ensemble_{}.csv".format(ensemble_member))
