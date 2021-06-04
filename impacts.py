@@ -32,6 +32,7 @@ def distance(lat1,lat2,lon1,lon2):
 class IMPAaCS:
 
     """
+    Update: June 3rd 2021 @ 11:30AM Central Time, Setting limits for SiO2 percent bins from 1-100, so we can get min/max
     Update: May 29th 2021 @ 2:30PM Central Time, Search only the subset of grids for impact, else skip
     Update: May 28th 2021 @ 12:19PM Central Time, with Jordan to get ensembles running
     
@@ -224,7 +225,7 @@ class IMPAaCS:
             self.top_layer_at_test_cell.append(self.grid_cell_state[self.impact_test_id][0])
 
     #--------------------------------------------------------------------------------------------------
-    def re_bin_sio2(self, temp_state, s_min=34, s_max=70, ds=1):
+    def re_bin_sio2(self, temp_state, s_min=1, s_max=100, ds=1):
         """
             Functionto place the mean SiO2 into the proper bin for distribution.
         """
