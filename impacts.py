@@ -35,7 +35,9 @@ class IMPAaCS:
     Update: June 3rd 2021 @ 11:30AM Central Time, Setting limits for SiO2 percent bins from 1-100, so we can get min/max
     Update: May 29th 2021 @ 2:30PM Central Time, Search only the subset of grids for impact, else skip
     Update: May 28th 2021 @ 12:19PM Central Time, with Jordan to get ensembles running
-    
+    Update: December 15th 2021 @ 3:30 Pacific time, putting bounds (40-80) on SiO2 
+    Update: January 27th 2022 @ 11PM Pacific time, Saving the maximum sio2 at each of the top 12 vertical layers
+    Update: Jamuary 30th 2022 @ 11:45PM Pacific time, adding option to bound sio2
     Dynamic geospatial model of IMPaCS, 
     using the size-frequency distribution of impacts scaled from the lunar surface, 
     we generate the volume and abundance of this enriched crust on Earth’s surface 
@@ -56,7 +58,8 @@ class IMPAaCS:
                  z_discretized_km = int(2),
                  proportion_melt_from_impact = 1/3,
                  sim_time=0,
-                 lon_lims = [-180, 180], lat_lims = [-45, 45]):
+                 lon_lims = [-180, 180], lat_lims = [-45, 45],
+                 bound_sio2=False):
         self.egrid = egrid
         self.verbose=verbose
         self.ensemble=ensemble
@@ -76,7 +79,7 @@ class IMPAaCS:
         self.n_x = self.egrid.londim.shape[0]
         self.n_y = self.egrid.latdim.shape[0]
         self.sim_time=sim_time
-        
+        self.bound_sio2=bound_sio2
         self.count_test_hits = 0
         self.grid_cell_state = {}
         self.impacted_grid_cells = []
@@ -137,6 +140,8 @@ class IMPAaCS:
         # Impact melt portion  (Upper)
         for i in upper_layer:
             self.grid_cell_state[grid_cell_id][i] = self.average_target / (1 - fractionation_factor)
+            if self.bound_sio2:
+                self.grid_cell_state[grid_cell_id][i] = self.clip_to_sio2_bounds(self.grid_cell_state[grid_cell_id][i])
 
         # Weighted average of upper    
         wt_sio2_upper = self.grid_cell_state[grid_cell_id][0]
@@ -145,10 +150,17 @@ class IMPAaCS:
         for i in lower_layer:
             numerator = self.average_target-(self.fraction_upper_layer * wt_sio2_upper)
             self.grid_cell_state[grid_cell_id][i] = numerator / self.fraction_lower_layer
+            if self.bound_sio2:
+                self.grid_cell_state[grid_cell_id][i] = self.clip_to_sio2_bounds(self.grid_cell_state[grid_cell_id][i])
 
         for i in range(melt_layers):
             self.grid_cell_state[grid_cell_id][i] = np.round(self.grid_cell_state[grid_cell_id][i],1)
     
+    #---------------
+    def clip_to_sio2_bounds(self, value):
+        value = np.max([40, np.min([80, value])])
+        return value
+
     #--------------------------------------------------------------------------------------------------    
     def state_prep(self):
         total_layers = int(self.max_depth_of_impact_melt / self.z_discretized_km)
@@ -297,7 +309,7 @@ class IMPAaCS:
         plt.close()
         
     # ---------------------------------------------------------------------------------------------
-    def do_sample_percents(self, n_layers=2):
+    def do_sample_percents(self, n_layers=0):
         
         """
             Function Summarizing and saving SiO2 percentages in a sample region.
@@ -306,27 +318,31 @@ class IMPAaCS:
                 plot_y_lims = Limits of latitude for SiO2 sample
                 n_layers = number of discretized layers to include in the average.
         """
-        
-        z = np.zeros([self.n_x, self.n_y])
-        bar_list = []
-        for i, ilon in enumerate(self.lon_subset):
-            for j, ilat in enumerate(self.lat_subset):
-                grid_cell = str(round(ilon,4))+' '+str(round(ilat,4))
-                temp_state = np.mean(self.grid_cell_state[grid_cell][0:2])
-                temp_state = self.re_bin_sio2(temp_state)
-                z[i, j] = temp_state
-                
-                mean_sio2 = np.mean(self.grid_cell_state[grid_cell][0:2])
-                if not np.isnan(mean_sio2):
-                    bar_list.append(self.re_bin_sio2(mean_sio2))
-        
-        bar_list = [x for x in bar_list if x != None]
-        
-        bar_data = {}
-        for u in np.unique(bar_list):
-            bar_data[u] = 100*bar_list.count(u)/len(bar_list)
 
-        self.sample_percents = bar_data
+        self.sample_percents_out={} 
+
+        for i_layer in range(12):
+            z = np.zeros([self.n_x, self.n_y])
+            bar_list = []
+            for i, ilon in enumerate(self.lon_subset):
+                for j, ilat in enumerate(self.lat_subset):
+                    grid_cell = str(round(ilon,4))+' '+str(round(ilat,4))
+                    temp_state = self.grid_cell_state[grid_cell][i_layer]
+                    temp_state = self.re_bin_sio2(temp_state)
+                    z[i, j] = temp_state
+                    
+                    mean_sio2 = self.grid_cell_state[grid_cell][i_layer]
+                    
+                    if not np.isnan(mean_sio2):
+                        bar_list.append(self.re_bin_sio2(mean_sio2))
+            
+            bar_list = [x for x in bar_list if x != None]
+            
+            bar_data = {}
+            for u in np.unique(bar_list):
+                bar_data[u] = 100*bar_list.count(u)/len(bar_list)
+    
+            self.sample_percents_out[i_layer] = bar_data
         
     # ---------------------------------------------------------------------------------------------
     def get_subset_of_grids(self):
