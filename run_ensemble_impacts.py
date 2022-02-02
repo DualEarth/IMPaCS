@@ -9,9 +9,14 @@ from math import sin, cos, sqrt, atan2, radians
 from ease_grid import EASE2_grid
 grid_size = 36000
 egrid = EASE2_grid(grid_size)
-assert egrid.shape == (406, 964)
 import time
 import impacts
+
+
+################
+################
+################
+SUB_FOLDER_NAME="bound_30jan2022"
 
 # Set the size bins
 max_diameter=330
@@ -21,11 +26,16 @@ diam_range = {'005':[1,5],'005-009':[5,9],'010-050':[10,50],'050-100':[50,100],'
 lambda_start = {'005':1,'005-009':1.1,'010-050':1.2,'050-100':1.4,'100+':1.8}
 lambda_end = {'005':2,'005-009':4,'010-050':8,'050-100':16,'100+':32}
 
-list_impacts_export = list(range(0,500,20))
-list_impacts_export.append(499)
-# Loop through the ensemble members. Want to calculate the probabilities at each go.
-for ensemble_member in range(200,300):
+percent_dict={}
 
+list_impacts_export = list(range(0,500,25))
+#list_impacts_export.append(499)
+# Loop through the ensemble members. Want to calculate the probabilities at each go.
+for ensemble_member in range(0,31):
+
+    # Associate seed with ensemble member, so we can compare different scenarios
+    random.seed(ensemble_member)
+    np.random.seed(ensemble_member)
 
     # Make dictionary with size bins and frequency
     with open('sfd.csv', 'r') as f:
@@ -45,9 +55,9 @@ for ensemble_member in range(200,300):
     df_freq = pd.DataFrame.from_dict({'high':his_dict, 'low':los_dict, 
                                       'lambda_start':lambda_start, 'lambda_end':lambda_end})
     df_freq['frequency_factor'] = [0.1,0.2,0.3,0.6,0.8]
-#    print("impact frequency")
-#    with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
-#        print(df_freq)
+    print("impact frequency")
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+        print(df_freq)
     
     t_total=500
     
@@ -92,7 +102,7 @@ for ensemble_member in range(200,300):
     print("impact frequency")
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
         print(df_freq)
-        df_freq.to_csv("impact_probabilities_export/ensemble_{}.csv".format(ensemble_member))
+        df_freq.to_csv("impact_probabilities_export_{}/ensemble_{}.csv".format(SUB_FOLDER_NAME, ensemble_member))
 
     impact_time = np.linspace(0,fivehundredmillion,t_total+1)[1:]
     df = pd.DataFrame(data=hits, index=impact_time)
@@ -101,7 +111,7 @@ for ensemble_member in range(200,300):
     impact_boundz=20
     [-impact_boundz, impact_boundz]
     Impc = impacts.IMPAaCS(egrid, max_depth_of_impact_melt=330, ensemble=ensemble_member, verbose=False, 
-                   lon_lims = [-impact_boundz, impact_boundz], lat_lims = [-impact_boundz, impact_boundz])
+                   lon_lims = [-impact_boundz, impact_boundz], lat_lims = [-impact_boundz, impact_boundz], bound_sio2=True)
     for it, t in enumerate(df.index.values):
         start_time = time.time()
         for d in diam_labs:
@@ -120,22 +130,24 @@ for ensemble_member in range(200,300):
                 #####      DO THE DYANMICS       #############################
                 Impc.update(impact_loc, impactor_diameter, t)
                 
-        Impc.do_sample_percents(n_layers=2)
-        
-        if it == 0:
-            percent_df = pd.DataFrame(Impc.sample_percents, index=[it])
-        else:
-            percent_df = percent_df.append(Impc.sample_percents, ignore_index=True)
+        Impc.do_sample_percents()
+       
+        for i_layer in range(12):
+            if it == 0:
+                percent_dict[i_layer] = pd.DataFrame(Impc.sample_percents_out[i_layer], index=[it])
+            else:
+                percent_dict[i_layer] = percent_dict[i_layer].append(Impc.sample_percents_out[i_layer], ignore_index=True)
 
-#        if it in list_impacts_export:
-#            print('time', it)
-#            Impc.plot_map_and_bar(save_figure=False,plot_figure=False,fig_path="./figs/ensemble_figs/{}/".format(ensemble_member))
-#            print("elapsed time: {}".format(time.time() - start_time))
-#            print(percent_df.iloc[-1,:])
-#            print(Impc.test_time)
-#            print(Impc.average_test_target_list)
-#            print(Impc.top_layer_at_test_cell)
-#            with open('impact_states/ensembles_3June2021/{}/{}.pkl'.format(ensemble_member, it), 'wb') as f:
-#                pkl.dump(Impc.grid_cell_state, f, pkl.HIGHEST_PROTOCOL)
+        if it in list_impacts_export:
+            print('time', it)
+            Impc.plot_map_and_bar(save_figure=False,plot_figure=False,fig_path="./figs/ensemble_figs/{}/".format(ensemble_member))
+            print("elapsed time: {}".format(time.time() - start_time))
+            print(percent_dict[0].iloc[-1,:])
+            print(Impc.test_time)
+            print(Impc.average_test_target_list)
+            print(Impc.top_layer_at_test_cell)
+            with open('impact_states/{}/{}/{}.pkl'.format(SUB_FOLDER_NAME, ensemble_member, it), 'wb') as fb:
+                pkl.dump(Impc.grid_cell_state, fb, pkl.HIGHEST_PROTOCOL)
     
-    percent_df.to_csv("sio2_percent_tables/3june2021/ensemble_{}.csv".format(ensemble_member))
+    for i_layer in range(12):
+        percent_dict[i_layer].to_csv("sio2_percent_tables/{}/ensemble_{}_{}.csv".format(SUB_FOLDER_NAME, ensemble_member, i_layer))
