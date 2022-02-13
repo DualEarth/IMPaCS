@@ -6,7 +6,7 @@ import random
 from math import sin, cos, sqrt, atan2, radians
 from ease_grid import EASE2_grid
 import matplotlib
-matplotlib.use('Agg') # Must be before importing matplotlib.pyplot or pylab!
+#matplotlib.use('Agg') # Must be before importing matplotlib.pyplot or pylab!
 import matplotlib.pyplot as plt
 from matplotlib import cm
 
@@ -38,13 +38,14 @@ class IMPAaCS:
     Update: December 15th 2021 @ 3:30 Pacific time, putting bounds (40-80) on SiO2 
     Update: January 27th 2022 @ 11PM Pacific time, Saving the maximum sio2 at each of the top 12 vertical layers
     Update: Jamuary 30th 2022 @ 11:45PM Pacific time, adding option to bound sio2
+    Update: February 1-13th 2022 Adding capability to do SiO2 percent volumes BY LAYER
     Dynamic geospatial model of IMPaCS, 
     using the size-frequency distribution of impacts scaled from the lunar surface, 
     we generate the volume and abundance of this enriched crust on Earth’s surface 
     during the Hadean to determine how rapidly it evolved.
     """
     
-    impact_test_id = str(round(0.14122179,4))+' '+str(round(0.18672199,4))
+    impact_test_id = str(round(0.18672199,4))+' '+str(round(0.14122179,4))
     
     def __init__(self, egrid, 
                  verbose=False,
@@ -86,7 +87,7 @@ class IMPAaCS:
         self.impactors_at_test_cell = [0]
         self.test_time = [0]
                 
-        self.sample_percents = {}
+        self.percent_volume_by_layer = {}
         self.lon_lims=lon_lims
         self.lat_lims=lat_lims
         self.lon_subset=[]
@@ -250,7 +251,7 @@ class IMPAaCS:
                 continue
 
     # ---------------------------------------------------------------------------------------------
-    def plot_map_and_bar(self, save_figure=False, plot_figure=False, fig_path='./'):
+    def plot_map_and_bar(self, save_figure=False, plot_figure=False, fig_path='./', map_layers=[0], dist_layer=0, bound_plots=True):
         
         """
             Function for plotting 2D map of SiO2 States.
@@ -264,12 +265,14 @@ class IMPAaCS:
             print('not plotting figure')
             return
 
+        print(f"plotting SiO2  map for layers {[i for i in map_layers]}, and distribution for layer {dist_layer}")
+
         z = np.zeros([self.n_x, self.n_y])
         bar_list = []
         for i, ilon in enumerate(self.lon_subset):
             for j, ilat in enumerate(self.lat_subset):
                 grid_cell = str(round(ilon,4))+' '+str(round(ilat,4))
-                temp_state = np.mean(self.grid_cell_state[grid_cell][0:2])
+                temp_state = np.mean([self.grid_cell_state[grid_cell][i] for i in map_layers])
                 temp_state = self.re_bin_sio2(temp_state)
                 z[i, j] = temp_state
         
@@ -282,25 +285,31 @@ class IMPAaCS:
 
         plt.subplot(grid[0, :5])
         
-        levels = np.arange(34, 70, 2)
+        if bound_plots:
+            levels = np.arange(36, 86, 2)
         cmap = cm.jet
         cs = plt.contourf(X, Y, np.transpose(z), levels, cmap=cm.get_cmap(cmap, len(levels) - 1)) 
-        cbar = fig.colorbar(cs, ticks=range(34,70,2))
+        if bound_plots:
+            cbar = fig.colorbar(cs, ticks=range(36,86,2))
+        else:
+            cbar = fig.colorbar(cs)
 
-        plt.title('Surface SiO2 content at {}myr'.format(int(self.sim_time/1000000)))
+        plt.title('Surface SiO2 content at {}myr, layers {}'.format(int(self.sim_time/1000000), map_layers))
         plt.xlabel('longitude')
         plt.ylabel('latitude')
-        plt.xlim(self.lon_lims)
-        plt.ylim(self.lat_lims)
-        plt.xticks(np.arange(self.lon_lims[0], self.lat_lims[1], 10))
+        if bound_plots:
+            plt.xlim(self.lon_lims)
+            plt.ylim(self.lat_lims)
+            plt.xticks(np.arange(self.lon_lims[0], self.lat_lims[1], 10))
         
         plt.subplot(grid[0, 5:])
-        plt.bar(list(self.sample_percents.keys()), list(self.sample_percents.values()), width=1.2)
-        plt.xlim([35,70])
-        plt.ylim([0,40])
+        plt.bar(list(self.percent_volume_by_layer[dist_layer].keys()), list(self.percent_volume_by_layer[dist_layer].values()), width=1.2)
+        if bound_plots:
+            plt.xlim([35,85])
+            plt.ylim([0,50])
+            plt.xticks(np.arange(35, 85, 5))
         plt.xlabel('Surface SiO2 content')
-        plt.ylabel('Percent surface area')
-        plt.xticks(np.arange(35, 75, 5))
+        plt.ylabel(f'Percent volume for layer {dist_layer}')
         if save_figure:
             plt.savefig(fig_path+'{}myr.png'.format(int(self.sim_time/1000000)), 
                     bbox_inches='tight', dpi = 100)
@@ -309,7 +318,7 @@ class IMPAaCS:
         plt.close()
         
     # ---------------------------------------------------------------------------------------------
-    def do_sample_percents(self, n_layers=0):
+    def do_percent_volume_by_layer(self, n_layers=1):
         
         """
             Function Summarizing and saving SiO2 percentages in a sample region.
@@ -319,9 +328,9 @@ class IMPAaCS:
                 n_layers = number of discretized layers to include in the average.
         """
 
-        self.sample_percents_out={} 
+        self.percent_volume_by_layer={} 
 
-        for i_layer in range(12):
+        for i_layer in range(n_layers):
             z = np.zeros([self.n_x, self.n_y])
             bar_list = []
             for i, ilon in enumerate(self.lon_subset):
@@ -342,7 +351,7 @@ class IMPAaCS:
             for u in np.unique(bar_list):
                 bar_data[u] = 100*bar_list.count(u)/len(bar_list)
     
-            self.sample_percents_out[i_layer] = bar_data
+            self.percent_volume_by_layer[i_layer] = bar_data
         
     # ---------------------------------------------------------------------------------------------
     def get_subset_of_grids(self):
