@@ -2,7 +2,6 @@
 
 import numpy as np
 import pandas as pd
-import random
 from math import sin, cos, sqrt, atan2, radians
 from ease_grid import EASE2_grid
 import matplotlib
@@ -229,7 +228,7 @@ class IMPAaCS:
             self.crator_diameter = 10*impactor_diameter
             self.crator_radius = self.crator_diameter/2
             # Random between 1-3 to accound for varying impact angle.
-            angle_factor = 1# 2*(1+random.random())-1
+            angle_factor = 1
             impact_depth = angle_factor * impactor_diameter
             self.z_layers = int( np.min([self.max_depth_of_impact_melt, impact_depth]) / self.z_discretized_km )
 
@@ -333,6 +332,9 @@ class IMPAaCS:
                 plot_x_lims = Limits of longitude for SiO2 sample
                 plot_y_lims = Limits of latitude for SiO2 sample
                 n_layers = number of discretized layers to include in the average.
+            Function outputs:
+                sum_at_sio2_by_layer = total number of cells with greater than threshold
+                percent_volume_by_layer = percentage of cells (per layer) greater than threshold
         """
 
         self.percent_volume_by_layer={} 
