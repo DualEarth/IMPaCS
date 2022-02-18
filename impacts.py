@@ -39,6 +39,8 @@ class IMPAaCS:
     Update: January 27th 2022 @ 11PM Pacific time, Saving the maximum sio2 at each of the top 12 vertical layers
     Update: Jamuary 30th 2022 @ 11:45PM Pacific time, adding option to bound sio2
     Update: February 1-13th 2022 Adding capability to do SiO2 percent volumes BY LAYER
+    Update: February 15th 2022 @ Adding factor from 1-3 to the impact deth to accound for impactor angle.
+                                 Adding a sum_at_sio2_by_layer to calculate pure volume, instead of percent.
     Dynamic geospatial model of IMPaCS, 
     using the size-frequency distribution of impacts scaled from the lunar surface, 
     we generate the volume and abundance of this enriched crust on Earth’s surface 
@@ -86,7 +88,8 @@ class IMPAaCS:
         self.impacted_grid_cells = []
         self.impactors_at_test_cell = [0]
         self.test_time = [0]
-                
+        
+        self.sum_at_sio2_by_layer = {}
         self.percent_volume_by_layer = {}
         self.lon_lims=lon_lims
         self.lat_lims=lat_lims
@@ -225,7 +228,10 @@ class IMPAaCS:
             # The impact crator is 10*Diameter, so the radius is half that
             self.crator_diameter = 10*impactor_diameter
             self.crator_radius = self.crator_diameter/2
-            self.z_layers = int(np.ceil(impactor_diameter / self.z_discretized_km))
+            # Random between 1-3 to accound for varying impact angle.
+            angle_factor = 1# 2*(1+random.random())-1
+            impact_depth = angle_factor * impactor_diameter
+            self.z_layers = int( np.min([self.max_depth_of_impact_melt, impact_depth]) / self.z_discretized_km )
 
     #--------------------------------------------------------------------------------------------------    
     def test_one_grid_cell(self, grid_cell_id, impactor_diameter):
@@ -318,10 +324,11 @@ class IMPAaCS:
         plt.close()
         
     # ---------------------------------------------------------------------------------------------
-    def do_percent_volume_by_layer(self, n_layers=1):
+    def do_volume_by_layer(self, n_layers=1):
         
         """
-            Function Summarizing and saving SiO2 percentages in a sample region.
+            Function Summarizing and saving total number of grids at specific SiO2 (mean) in a sample region.
+                                 and saving SiO2 percentages in a sample region.
             Function inputs:
                 plot_x_lims = Limits of longitude for SiO2 sample
                 plot_y_lims = Limits of latitude for SiO2 sample
@@ -329,6 +336,7 @@ class IMPAaCS:
         """
 
         self.percent_volume_by_layer={} 
+        self.sum_at_sio2_by_layer={} 
 
         for i_layer in range(n_layers):
             z = np.zeros([self.n_x, self.n_y])
@@ -347,11 +355,14 @@ class IMPAaCS:
             
             bar_list = [x for x in bar_list if x != None]
             
-            bar_data = {}
+            percent_data = {}
+            n_cells = {}
             for u in np.unique(bar_list):
-                bar_data[u] = 100*bar_list.count(u)/len(bar_list)
+                n_cells[u] = bar_list.count(u)
+                percent_data[u] = 100*bar_list.count(u)/len(bar_list)
     
-            self.percent_volume_by_layer[i_layer] = bar_data
+            self.percent_volume_by_layer[i_layer] = percent_data
+            self.sum_at_sio2_by_layer[i_layer] = n_cells
         
     # ---------------------------------------------------------------------------------------------
     def get_subset_of_grids(self):
