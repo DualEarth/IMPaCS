@@ -16,7 +16,7 @@ import impacts
 ################
 ################
 ################
-SUB_FOLDER_NAME="bound_30jan2022"
+SUB_FOLDER_NAME="unbound_30jan2022"
 
 # Set the size bins
 max_diameter=330
@@ -31,7 +31,7 @@ percent_dict={}
 list_impacts_export = list(range(0,500,25))
 #list_impacts_export.append(499)
 # Loop through the ensemble members. Want to calculate the probabilities at each go.
-for ensemble_member in range(0,31):
+for ensemble_member in range(61,100):
 
     # Associate seed with ensemble member, so we can compare different scenarios
     random.seed(ensemble_member)
@@ -111,7 +111,7 @@ for ensemble_member in range(0,31):
     impact_boundz=20
     [-impact_boundz, impact_boundz]
     Impc = impacts.IMPAaCS(egrid, max_depth_of_impact_melt=330, ensemble=ensemble_member, verbose=False, 
-                   lon_lims = [-impact_boundz, impact_boundz], lat_lims = [-impact_boundz, impact_boundz], bound_sio2=True)
+                   lon_lims = [-impact_boundz, impact_boundz], lat_lims = [-impact_boundz, impact_boundz], bound_sio2=False)
     for it, t in enumerate(df.index.values):
         start_time = time.time()
         for d in diam_labs:
@@ -130,13 +130,14 @@ for ensemble_member in range(0,31):
                 #####      DO THE DYANMICS       #############################
                 Impc.update(impact_loc, impactor_diameter, t)
                 
-        Impc.do_sample_percents()
+        n_layers_for_percent_volume = 12
+        Impc.do_percent_volume_by_layer(n_layers = n_layers_for_percent_volume)
        
-        for i_layer in range(12):
+        for i_layer in range(n_layers_for_percent_volume):
             if it == 0:
-                percent_dict[i_layer] = pd.DataFrame(Impc.sample_percents_out[i_layer], index=[it])
+                percent_dict[i_layer] = pd.DataFrame(Impc.percent_volume_by_layer[i_layer], index=[it])
             else:
-                percent_dict[i_layer] = percent_dict[i_layer].append(Impc.sample_percents_out[i_layer], ignore_index=True)
+                percent_dict[i_layer] = percent_dict[i_layer].append(Impc.percent_volume_by_layer[i_layer], ignore_index=True)
 
         if it in list_impacts_export:
             print('time', it)
