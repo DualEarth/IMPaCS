@@ -40,6 +40,7 @@ class IMPAaCS:
     Update: February 1-13th 2022 Adding capability to do SiO2 percent volumes BY LAYER
     Update: February 15th 2022 @ Adding factor from 1-3 to the impact deth to accound for impactor angle.
                                  Adding a sum_at_sio2_by_layer to calculate pure volume, instead of percent.
+    Update: February 21st 2022: can test average of n layers at the "test cell". Simplifying the vertical discretization of impacts a bit.
     Dynamic geospatial model of IMPaCS, 
     using the size-frequency distribution of impacts scaled from the lunar surface, 
     we generate the volume and abundance of this enriched crust on Earth’s surface 
@@ -61,7 +62,8 @@ class IMPAaCS:
                  proportion_melt_from_impact = 1/3,
                  sim_time=0,
                  lon_lims = [-180, 180], lat_lims = [-45, 45],
-                 bound_sio2=False):
+                 bound_sio2=False,
+                 test_layers=1):
         self.egrid = egrid
         self.verbose=verbose
         self.ensemble=ensemble
@@ -76,7 +78,7 @@ class IMPAaCS:
         self.proportion_melt_from_impact = proportion_melt_from_impact
         self.average_target = self.primitive_initial_state
         self.average_target_list = [self.primitive_initial_state]
-        self.top_layer_at_test_cell = [self.primitive_initial_state]
+        self.top_layers_at_test_cell = [self.primitive_initial_state]
         self.average_test_target_list = [self.primitive_initial_state]
         self.n_x = self.egrid.londim.shape[0]
         self.n_y = self.egrid.latdim.shape[0]
@@ -87,6 +89,7 @@ class IMPAaCS:
         self.impacted_grid_cells = []
         self.impactors_at_test_cell = [0]
         self.test_time = [0]
+        self.test_layers = test_layers
         
         self.sum_at_sio2_by_layer = {}
         self.percent_volume_by_layer = {}
@@ -126,10 +129,11 @@ class IMPAaCS:
         depth_of_impact_melt = impactor_diameter * self.proportion_melt_from_impact # D/3
 
         #Vertical discretization.
-        melt_layers = int(depth_of_impact_melt / self.z_discretized_km)
-
-        lower_layer  = range(int(round(self.fraction_upper_layer * melt_layers,2)), melt_layers)
-        upper_layer  = range(0, int(round(self.fraction_upper_layer * melt_layers,2)))
+        melt_layers = int(np.ceil(depth_of_impact_melt / self.z_discretized_km))
+        n_upper_layers = int(np.ceil(self.fraction_upper_layer * melt_layers))
+        upper_layer  = range(0, n_upper_layers)
+        n_lower_layers  = melt_layers - n_upper_layers 
+        lower_layer = range(n_upper_layers, melt_layers)
 
         fracionated_melt = depth_of_impact_melt * self.fraction_upper_layer #Units: km
 
@@ -240,7 +244,7 @@ class IMPAaCS:
             self.test_time.append(self.sim_time)
             self.impactors_at_test_cell.append(impactor_diameter)
             self.average_test_target_list.append(self.average_target)
-            self.top_layer_at_test_cell.append(self.grid_cell_state[self.impact_test_id][0])
+            self.top_layers_at_test_cell.append(np.mean(self.grid_cell_state[self.impact_test_id][:self.test_layers]))
 
     #--------------------------------------------------------------------------------------------------
     def re_bin_sio2(self, temp_state, s_min=1, s_max=100, ds=1):
