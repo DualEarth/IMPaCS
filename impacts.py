@@ -129,33 +129,33 @@ class IMPAaCS:
         depth_of_impact_melt = impactor_diameter * self.proportion_melt_from_impact # D/3
 
         #Vertical discretization.
-        melt_layers = int(np.ceil(depth_of_impact_melt / self.z_discretized_km))
+        melt_layers = int(np.ceil(depth_of_impact_melt / self.z_discretized_km))        
         n_upper_layers = int(np.ceil(self.fraction_upper_layer * melt_layers))
         upper_layer  = range(0, n_upper_layers)
         n_lower_layers  = melt_layers - n_upper_layers 
         lower_layer = range(n_upper_layers, melt_layers)
 
-        fracionated_melt = depth_of_impact_melt * self.fraction_upper_layer #Units: km
+        primitive_mantle_layer = range(melt_layers, self.z_layers)
 
         fractionation_factor = 1 - (self.target_SiO2 / self.upper_SiO2)
 
         #####      DO THE DYANMICS       #############################
-        # Set lower layer to primitive initial state.  
-        for i in lower_layer:
+        # Set the primitive initial state.  
+        for i in primitive_mantle_layer:
             self.grid_cell_state[grid_cell_id][i] = self.primitive_initial_state
 
+        # Weighted average of upper    
+        wt_sio2_upper = np.mean(self.grid_cell_state[grid_cell_id][:n_upper_layers])
+            
         # Impact melt portion  (Upper)
         for i in upper_layer:
             self.grid_cell_state[grid_cell_id][i] = self.average_target / (1 - fractionation_factor)
             if self.bound_sio2:
                 self.grid_cell_state[grid_cell_id][i] = self.clip_to_sio2_bounds(self.grid_cell_state[grid_cell_id][i])
 
-        # Weighted average of upper    
-        wt_sio2_upper = self.grid_cell_state[grid_cell_id][0]
-
         # Lower of impact melt portion
         for i in lower_layer:
-            numerator = self.average_target-(self.fraction_upper_layer * wt_sio2_upper)
+            numerator = self.average_target - (self.fraction_upper_layer * wt_sio2_upper)
             self.grid_cell_state[grid_cell_id][i] = numerator / self.fraction_lower_layer
             if self.bound_sio2:
                 self.grid_cell_state[grid_cell_id][i] = self.clip_to_sio2_bounds(self.grid_cell_state[grid_cell_id][i])
