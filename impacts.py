@@ -8,6 +8,7 @@ import matplotlib
 #matplotlib.use('Agg') # Must be before importing matplotlib.pyplot or pylab!
 import matplotlib.pyplot as plt
 from matplotlib import cm
+import random
 
 # approximate radius of earth in km
 def distance(lat1,lat2,lon1,lon2):
@@ -41,6 +42,8 @@ class IMPAaCS:
     Update: February 15th 2022 @ Adding factor from 1-3 to the impact deth to accound for impactor angle.
                                  Adding a sum_at_sio2_by_layer to calculate pure volume, instead of percent.
     Update: February 21st 2022: can test average of n layers at the "test cell". Simplifying the vertical discretization of impacts a bit.
+    Update: March 4th 2022: The impact_diameter was not used in the get_average_target function, so I removed it.
+    Update: March 9th 2022: Fixed the calculation for wt_sio2_upper. Add back in the angle factor and make sure it works correctly
     Dynamic geospatial model of IMPaCS, 
     using the size-frequency distribution of impacts scaled from the lunar surface, 
     we generate the volume and abundance of this enriched crust on Earth’s surface 
@@ -51,7 +54,7 @@ class IMPAaCS:
     
     def __init__(self, egrid, 
                  verbose=False,
-                 max_depth_of_impact_melt=330,
+                 max_depth_of_impact_melt=500,
                  ensemble = 0,
                  primitive_initial_state=45,
                  fraction_upper_layer = 2/3,
@@ -63,7 +66,8 @@ class IMPAaCS:
                  sim_time=0,
                  lon_lims = [-180, 180], lat_lims = [-45, 45],
                  bound_sio2=False,
-                 test_layers=1):
+                 test_layers=1,
+                 consider_impact_angle=False):
         self.egrid = egrid
         self.verbose=verbose
         self.ensemble=ensemble
@@ -97,6 +101,10 @@ class IMPAaCS:
         self.lat_lims=lat_lims
         self.lon_subset=[]
         self.lat_subset=[]
+
+        self.consider_impact_angle = consider_impact_angle
+        self.impact_angle_factor = 1
+        self.penetration_depth = 0
         
         # Set up the grids so we don't search the whole planet for every impact
         self.get_subset_of_grids()
@@ -112,7 +120,7 @@ class IMPAaCS:
         self.impact_dimensions(impactor_diameter)
         self.find_the_grid(impact_loc)
         if len(self.impacted_grid_cells) > 0:
-            self.get_average_target(impactor_diameter)
+            self.get_average_target()
             self.loop_impact_grid(impactor_diameter)
         
     #--------------------------------------------------------------------------------------------------
@@ -126,11 +134,18 @@ class IMPAaCS:
         """
         
         #####      DYNAMIC FACTORS       ############################
-        depth_of_impact_melt = impactor_diameter * self.proportion_melt_from_impact # D/3
+        depth_of_impact_melt = self.impact_angle_factor * impactor_diameter * self.proportion_melt_from_impact # D/3
 
         #Vertical discretization.
-        melt_layers = int(np.ceil(depth_of_impact_melt / self.z_discretized_km))        
+        melt_layers = int(np.ceil(depth_of_impact_melt / self.z_discretized_km))
+        
         n_upper_layers = int(np.ceil(self.fraction_upper_layer * melt_layers))
+
+        if self.verbose:
+            print("depth_of_impact_melt", depth_of_impact_melt)
+            print("melt_layers", melt_layers)
+            print("n_upper_layers", n_upper_layers)
+
         upper_layer  = range(0, n_upper_layers)
         n_lower_layers  = melt_layers - n_upper_layers 
         lower_layer = range(n_upper_layers, melt_layers)
@@ -144,12 +159,12 @@ class IMPAaCS:
         for i in primitive_mantle_layer:
             self.grid_cell_state[grid_cell_id][i] = self.primitive_initial_state
 
-        # Weighted average of upper    
-        wt_sio2_upper = np.mean(self.grid_cell_state[grid_cell_id][:n_upper_layers])
+        # Weighted average of upper 
+        wt_sio2_upper = self.average_target / (1 - fractionation_factor)
             
         # Impact melt portion  (Upper)
         for i in upper_layer:
-            self.grid_cell_state[grid_cell_id][i] = self.average_target / (1 - fractionation_factor)
+            self.grid_cell_state[grid_cell_id][i] = wt_sio2_upper
             if self.bound_sio2:
                 self.grid_cell_state[grid_cell_id][i] = self.clip_to_sio2_bounds(self.grid_cell_state[grid_cell_id][i])
 
@@ -177,7 +192,7 @@ class IMPAaCS:
                 self.grid_cell_state[grid_cell_id] = np.ones(total_layers) * self.primitive_initial_state
         
     #--------------------------------------------------------------------------------------------------    
-    def get_average_target(self, impactor_diameter):
+    def get_average_target(self):
         average_target = 0
         for grid_cell in self.impacted_grid_cells:
             grid_cell_id = str(round(grid_cell[0],4))+' '+str(round(grid_cell[1],4))
@@ -232,9 +247,12 @@ class IMPAaCS:
             self.crator_diameter = 10*impactor_diameter
             self.crator_radius = self.crator_diameter/2
             # Random between 1-3 to accound for varying impact angle.
-            angle_factor = 1
-            impact_depth = angle_factor * impactor_diameter
-            self.z_layers = int( np.min([self.max_depth_of_impact_melt, impact_depth]) / self.z_discretized_km )
+            if self.consider_impact_angle:
+                self.impact_angle_factor = random.uniform(1, 3)
+            else:
+                self.impact_angle_factor = 1
+            self.penetration_depth = self.impact_angle_factor * impactor_diameter
+            self.z_layers = int( np.min([self.max_depth_of_impact_melt, self.penetration_depth]) / self.z_discretized_km )
 
     #--------------------------------------------------------------------------------------------------    
     def test_one_grid_cell(self, grid_cell_id, impactor_diameter):
