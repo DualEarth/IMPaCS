@@ -44,6 +44,7 @@ class IMPAaCS:
     Update: February 21st 2022: can test average of n layers at the "test cell". Simplifying the vertical discretization of impacts a bit.
     Update: March 4th 2022: The impact_diameter was not used in the get_average_target function, so I removed it.
     Update: March 9th 2022: Fixed the calculation for wt_sio2_upper. Add back in the angle factor and make sure it works correctly
+    Update: March 10th 2022: Angle factor range as input
     Dynamic geospatial model of IMPaCS, 
     using the size-frequency distribution of impacts scaled from the lunar surface, 
     we generate the volume and abundance of this enriched crust on Earth’s surface 
@@ -67,7 +68,7 @@ class IMPAaCS:
                  lon_lims = [-180, 180], lat_lims = [-45, 45],
                  bound_sio2=False,
                  test_layers=1,
-                 consider_impact_angle=False):
+                 consider_impact_angle=[1,1]):
         self.egrid = egrid
         self.verbose=verbose
         self.ensemble=ensemble
@@ -247,10 +248,7 @@ class IMPAaCS:
             self.crator_diameter = 10*impactor_diameter
             self.crator_radius = self.crator_diameter/2
             # Random between 1-3 to accound for varying impact angle.
-            if self.consider_impact_angle:
-                self.impact_angle_factor = random.uniform(1, 3)
-            else:
-                self.impact_angle_factor = 1
+            self.impact_angle_factor = random.uniform(self.consider_impact_angle[0], self.consider_impact_angle[1])
             self.penetration_depth = self.impact_angle_factor * impactor_diameter
             self.z_layers = int( np.min([self.max_depth_of_impact_melt, self.penetration_depth]) / self.z_discretized_km )
 
