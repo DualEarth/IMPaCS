@@ -181,7 +181,7 @@ class IMPAaCS:
     
     #---------------
     def clip_to_sio2_bounds(self, value):
-        value = np.max([40, np.min([80, value])])
+        value = np.max([45, np.min([80, value])])
         return value
 
     #--------------------------------------------------------------------------------------------------    

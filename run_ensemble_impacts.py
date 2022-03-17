@@ -16,22 +16,22 @@ import impacts
 ################
 ################
 ################
-SUB_FOLDER_NAME="unbound_30jan2022"
+SUB_FOLDER_NAME="march2022"
 
 # Set the size bins
 max_diameter=330
-diam_bins = [5, 10, 50, 100]
-diam_labs = ['005', '005-009', '010-050', '050-100', '100+']
-diam_range = {'005':[1,5],'005-009':[5,9],'010-050':[10,50],'050-100':[50,100],'100+':[100,330]}
-lambda_start = {'005':1,'005-009':1.1,'010-050':1.2,'050-100':1.4,'100+':1.8}
-lambda_end = {'005':2,'005-009':4,'010-050':8,'050-100':16,'100+':32}
+diam_bins = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 300, 500]
+diam_labs = [f'{str(i).zfill(3)}-{str(j).zfill(3)}' for i, j in zip(diam_bins[0:-1], diam_bins[1:])]
+diam_range = {f'{str(i).zfill(3)}-{str(j).zfill(3)}':[i,j] for i, j in zip(diam_bins[0:-1], diam_bins[1:])}
+lambda_start = {j:1+i/10 for i, j in enumerate(list(diam_range.keys()))}
+lambda_end = {j:1+(np.power(i,1.03)) for i, j in enumerate(list(diam_range.keys()))}
 
 percent_dict={}
 
 list_impacts_export = list(range(0,500,25))
 #list_impacts_export.append(499)
 # Loop through the ensemble members. Want to calculate the probabilities at each go.
-for ensemble_member in range(61,100):
+for ensemble_member in range(100):
 
     # Associate seed with ensemble member, so we can compare different scenarios
     random.seed(ensemble_member)
@@ -43,8 +43,8 @@ for ensemble_member in range(61,100):
     los_dict = {i:0 for i in diam_labs}
     his_dict = {i:0 for i in diam_labs}
     for i in freqs.index.values:
-        for j in range(len(diam_bins)):
-            if i < diam_bins[j]:
+        for j in range(len(diam_labs)):
+            if i < diam_bins[j+1] and i > 9:
                 los_dict[diam_labs[j]] += freqs.loc[i,'low']
                 his_dict[diam_labs[j]] += freqs.loc[i,'high']
                 break
@@ -54,7 +54,9 @@ for ensemble_member in range(61,100):
                 break
     df_freq = pd.DataFrame.from_dict({'high':his_dict, 'low':los_dict, 
                                       'lambda_start':lambda_start, 'lambda_end':lambda_end})
-    df_freq['frequency_factor'] = [0.1,0.2,0.3,0.6,0.8]
+    
+    df_freq['frequency_factor'] = [.1+i/10 for i in range(len(diam_bins)-1)]
+
     print("impact frequency")
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
         print(df_freq)
@@ -131,7 +133,7 @@ for ensemble_member in range(61,100):
                 Impc.update(impact_loc, impactor_diameter, t)
                 
         n_layers_for_percent_volume = 12
-        Impc.do_percent_volume_by_layer(n_layers = n_layers_for_percent_volume)
+        Impc.do_volume_by_layer(n_layers = n_layers_for_percent_volume)
        
         for i_layer in range(n_layers_for_percent_volume):
             if it == 0:
@@ -146,7 +148,7 @@ for ensemble_member in range(61,100):
             print(percent_dict[0].iloc[-1,:])
             print(Impc.test_time)
             print(Impc.average_test_target_list)
-            print(Impc.top_layer_at_test_cell)
+            print(Impc.top_layers_at_test_cell)
             with open('impact_states/{}/{}/{}.pkl'.format(SUB_FOLDER_NAME, ensemble_member, it), 'wb') as fb:
                 pkl.dump(Impc.grid_cell_state, fb, pkl.HIGHEST_PROTOCOL)
     
