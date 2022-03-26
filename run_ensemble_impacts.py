@@ -12,26 +12,29 @@ egrid = EASE2_grid(grid_size)
 import time
 import impacts
 
-
 ################
 ################
 ################
-SUB_FOLDER_NAME="march2022"
+SUB_FOLDER_NAME="march2022_5"
 
-# Set the size bins
-max_diameter=330
-diam_bins = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 300, 500]
-diam_labs = [f'{str(i).zfill(3)}-{str(j).zfill(3)}' for i, j in zip(diam_bins[0:-1], diam_bins[1:])]
-diam_range = {f'{str(i).zfill(3)}-{str(j).zfill(3)}':[i,j] for i, j in zip(diam_bins[0:-1], diam_bins[1:])}
-lambda_start = {j:1+i/10 for i, j in enumerate(list(diam_range.keys()))}
-lambda_end = {j:1+(np.power(i,1.03)) for i, j in enumerate(list(diam_range.keys()))}
 
-percent_dict={}
-
-list_impacts_export = list(range(0,500,25))
-#list_impacts_export.append(499)
+#-----------------------------------------------------------------------------------
 # Loop through the ensemble members. Want to calculate the probabilities at each go.
-for ensemble_member in range(100):
+for ensemble_member in range(31,50):
+
+    # Set the size bins
+    max_diameter=330
+    diam_bins = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 300, 500]
+    diam_labs = [f'{str(i).zfill(3)}-{str(j).zfill(3)}' for i, j in zip(diam_bins[0:-1], diam_bins[1:])]
+    diam_range = {f'{str(i).zfill(3)}-{str(j).zfill(3)}':[i,j] for i, j in zip(diam_bins[0:-1], diam_bins[1:])}
+    lambda_start = {j:1+i/10 for i, j in enumerate(list(diam_range.keys()))}
+    lambda_end = {j:1+(np.power(i,1.03)) for i, j in enumerate(list(diam_range.keys()))}
+    
+    percent_dict={}
+    
+    # Set some time steps to save the full state
+    list_impacts_export = list(range(0,500,25))
+    list_impacts_export.append(499)
 
     # Associate seed with ensemble member, so we can compare different scenarios
     random.seed(ensemble_member)
@@ -44,7 +47,7 @@ for ensemble_member in range(100):
     his_dict = {i:0 for i in diam_labs}
     for i in freqs.index.values:
         for j in range(len(diam_labs)):
-            if i < diam_bins[j+1] and i > 9:
+            if i < diam_bins[j+1] and i >= 5:
                 los_dict[diam_labs[j]] += freqs.loc[i,'low']
                 his_dict[diam_labs[j]] += freqs.loc[i,'high']
                 break
@@ -112,8 +115,22 @@ for ensemble_member in range(100):
     print("Running ensemble {}".format(ensemble_member))
     impact_boundz=20
     [-impact_boundz, impact_boundz]
-    Impc = impacts.IMPAaCS(egrid, max_depth_of_impact_melt=330, ensemble=ensemble_member, verbose=False, 
-                   lon_lims = [-impact_boundz, impact_boundz], lat_lims = [-impact_boundz, impact_boundz], bound_sio2=False)
+
+    #=======================================================================#
+    #=======================================================================#
+    Impc = impacts.IMPAaCS(egrid,                                           #
+                           max_depth_of_impact_melt=998,                    #
+                           ensemble=ensemble_member,                        #
+                           verbose=False,                                   #
+                           lon_lims = [-impact_boundz, impact_boundz],      #
+                           lat_lims = [-impact_boundz, impact_boundz],      #
+                           bound_sio2=True,                                 #
+                           z_discretized_km=int(1))                         #
+    #=======================================================================#
+    #=======================================================================#
+
+    diam_labs.reverse()
+
     for it, t in enumerate(df.index.values):
         start_time = time.time()
         for d in diam_labs:
@@ -134,6 +151,11 @@ for ensemble_member in range(100):
                 
         n_layers_for_percent_volume = 12
         Impc.do_volume_by_layer(n_layers = n_layers_for_percent_volume)
+    
+        # At every time step save the total relative crust over time
+        with open(f'sio2_percent_tables/{SUB_FOLDER_NAME}/total_relative_crust_{ensemble_member}.txt', 'w') as f:
+            for item in Impc.relative_percent_crust_vol_list:
+                f.write("%s\n" % item)
        
         for i_layer in range(n_layers_for_percent_volume):
             if it == 0:
