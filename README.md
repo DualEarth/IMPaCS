@@ -99,3 +99,11 @@ The script `run_full_impacts.py`` is designed to simulate the frequency and dist
 **Visualization and Analysis**:
  - The script has commented-out code for plotting the results (I.plot_map()).
  - Prints out various lists related to the test cell, such as time, average target, and top layer at the test cell.
+
+## Citation Guide
+
+For information on how to cite this project in your academic work, please refer to our [Citation Guide](./CITATION.md).
+
+## References
+
+- Faltys, J., Wielicki, M. M., & Frame, J. (2021). Earth’s Early Evolution: A felsic crustal composition during the Hadean. Oral presentation at Goldschmidt Conference, Room 15 (Online), July 7. Retrieved from [GoldSchmidt Conference](https://conf.goldschmidt.info/goldschmidt/2021/meetingapp.cgi/Paper/3439)
