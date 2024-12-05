@@ -1,1 +1,10 @@
-Faltys, J., Wielicki, M. M., & Frame, J. (2021). Earth’s Early Evolution: A felsic crustal composition during the Hadean. Oral presentation at Goldschmidt Conference, Room 15 (Online), July 7. Retrieved from https://conf.goldschmidt.info/goldschmidt/2021/meetingapp.cgi/Paper/3439
+cff-version: 1.1.0
+message: "Please cite it as below."
+authors:
+- family-names: Faltys, Frame
+  given-names: Jordan, Jonathan M.
+orcid: https://orcid.org/0000-0002-2533-3843
+title:
+version: 1.0.0
+date-released: 2024-12-04
+conference-presentation: Faltys, J., Wielicki, M. M., & Frame, J. (2021). Earth’s Early Evolution: A felsic crustal composition during the Hadean. Oral presentation at Goldschmidt Conference, Room 15 (Online), July 7. Retrieved from https://conf.goldschmidt.info/goldschmidt/2021/meetingapp.cgi/Paper/3439

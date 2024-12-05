@@ -1,13 +1,13 @@
 # Dynamic geospatial model of IMPaCS
-This repository hosts the Dynamic Geospatial Model of IMPAaCS, a sophisticated simulation tool that leverages the size-frequency distribution of impacts, extrapolated from lunar surface data, to reconstruct the evolution of Earth's crust during the Hadean eon, spanning approximately 500 million years.
+This repository hosts the geodynamic numerical model IMPAaCS, whic uses the size-frequency distribution of impacts, extrapolated from lunar surface data, to reconstruct the evolution of Earth's crust during the Hadean eon, spanning approximately 500 million years.
 
 ## Overview
-The model generates detailed insights into the volume and abundance of enriched crust on Earth's surface, offering a unique perspective on the planet's early geological development. It employs advanced algorithms to simulate meteorite impacts and their subsequent effects on Earth's geology, particularly focusing on the distribution and evolution of Silicon Dioxide (SiO2) content.
+The model aims to estimate the volume and abundance of enriched crust on Earth's surface during the planet's early geological development, particularly focusing on the distribution and evolution of Silicon Dioxide (SiO2) content.
 
 ### Key features
 **Impact Probability Analysis**: The model calculates the likelihood of meteorite impacts throughout the Hadean period, providing a probabilistic understanding of these events.
-**Grid-Based Impact Simulation**: It simulates impacts on a grid-based representation of Earth, offering a detailed view of the impact distribution over time.
-**SiO2 Concentration Tracking**: A core aspect of the model is tracking the SiO2 concentration at various depths, reflecting the geochemical changes due to impacts.
+**Grid-Based Impact Simulation**: It simulates impacts on a grid-based representation of Earth for impact distributions over space and time.
+**SiO2 Concentration Tracking**: SiO2 concentration at various depths, reflecting the geochemical changes due to impacts.
 **Visualization Tools**: The model includes functions for visualizing the distribution of SiO2 and the impact dynamics, aiding in the interpretation of simulation results.
 
 ### Visualizations
@@ -17,15 +17,15 @@ The model generates detailed insights into the volume and abundance of enriched 
 
 ### Model Components
 #### impacts.py
-**Distance Calculation**: Essential for determining the affected area by an impact, based on the geographical coordinates.
+**Distance Calculation**: For determining the affected area by an impact, based on the geographical coordinates.
 **Class IMPAaCS**: The central class of the model, initializing with various parameters like grid information, impact melt depth, and SiO2 content.
-**Model Dynamics**: Includes methods like update for simulating impacts and state_dynamics for altering the chemical composition of grid cells.
-**Visualization and Analysis**: Functions for categorizing and visualizing SiO2 content, and methods for analyzing the vertical distribution of SiO2.
+**Model Dynamics**: Simulating impacts and state_dynamics for altering the chemical composition of grid cells.
+**Visualization and Analysis**: Categorizing and visualizing SiO2 content, and analyzing the vertical distribution of SiO2.
 #### run_full_impacts.py
 **Grid Initialization**: Sets up a grid system for the simulation, ensuring correct dimensions.
 **Impact Size and Frequency**: Defines meteorite size categories and calculates impact frequencies based on historical data.
 **Simulation Loop**: Iteratively simulates impacts, updating the IMPAaCS model with each event.
-**Data Analysis and Saving**: Analyzes and saves the state of the model at each simulation step, allowing for detailed examination of impact effects.
+**Data Analysis and Saving**: Analyzes and saves the state of the model at each simulation step, allowing for examination of impact effects.
 
 ## Selected results
 
@@ -44,7 +44,7 @@ The model generates detailed insights into the volume and abundance of enriched 
 
 ## Usage
 ### Running the Simulation
-The simulation is primarily executed through a SLURM script named `run_impacts.slurm``. This script is designed to manage and orchestrate the simulation process on systems that support SLURM, a widely-used job scheduling system for Linux clusters.
+The simulation is primarily executed through a SLURM script named `run_impacts.slurm``. This script is designed to manage and orchestrate the simulation process on systems that support SLURM job scheduling on Linux clusters.
 #### Key Steps:
 **SLURM Script**: The run_impacts.slurm script initiates the simulation process. It sets up the necessary computing environment and resources required for the simulation.
 
@@ -57,27 +57,27 @@ The simulation is primarily executed through a SLURM script named `run_impacts.s
 
 ### Getting Started
 #### To start a simulation:
- - Review and modify run_impacts.slurm as per your system's SLURM configuration.
- - Submit the SLURM script to your cluster's job scheduler using the command sbatch run_impacts.slurm.
+ - Review and modify `run_impacts.slurm` as per your system's SLURM configuration.
+ - Submit the SLURM script to your cluster's job scheduler using the command `sbatch run_impacts.slurm`.
  - Monitor the job's progress through the output and error files specified in the SLURM script.
 For detailed information on the model parameters, simulation settings, and output interpretation, refer to the code within the `impacts.py` and `run_full_impacts.py` scripts.
 
 ## Python file content
 #### impacts.py
-**Distance Calculation**: The distance function calculates the distance between two points on Earth's surface given their latitudes and longitudes. This is crucial for determining the area affected by an impact.  
+**Distance Calculation**: The distance function calculates the distance between two points on Earth's surface given their latitudes and longitudes, to determine the area affected by an impact.  
 Class IMPAaCS: This is the main class for the model. It initializes with a variety of parameters like grid information (egrid), impact melt depth, SiO2 content, and discretization parameters.  
 **Model Updates and Dynamics**:
  - The update method simulates the effect of an impact at a specific location and time.
- - The state_dynamics method is central to the model, altering the chemical composition of the grid cells based on the impact.  
+ - The state_dynamics method alters the chemical composition of the grid cells based on the impact.  
 **SiO2 Distribution and Visualization**:
- - Methods like re_bin_sio2 and plot_map_and_bar handle the categorization of SiO2 content and its visualization on a map.
+ - Methods like `re_bin_sio2` and `plot_map_and_bar` handle the categorization of SiO2 content and its visualization on a map.
  - The model focuses on the vertical distribution of SiO2, considering different layers of the Earth's crust.  
 **Impact Crater Modeling**: The model considers the diameter of the impact crater and the angle of impact, which affects the depth of penetration and the area affected.  
 **Sampling and Analysis**: The model can subset the grids for analysis (get_subset_of_grids) and calculate the volume of crustal material affected by impacts (calculate_relative_percent_crust_vol_multiplier).  
 **Testing and Experimentation**: The model allows for testing specific grid cells to understand the impact dynamics in detail.
 
 #### run_full_impacts.py
-The script `run_full_impacts.py`` is designed to simulate the frequency and distribution of meteorite impacts on Earth over a specified time period, using the IMPAaCS class from the impacts module. Here's a breakdown of its key components and functionalities:  
+The script `run_full_impacts.py` is designed to simulate the frequency and distribution of meteorite impacts on Earth over a specified time period, using the IMPAaCS class from the impacts module. Here's a breakdown of its key components and functionalities:  
 **Grid Initialization**:  
  - Initializes an EASE2_grid object with a specified grid size.
  - Asserts that the grid shape matches the expected dimensions.  
