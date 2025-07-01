@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=42"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "IMPaCS"
+version = "0.1.0"
+authors = [{ name = "Jonathan M. Frame", email = "jmframe@crimson.ua.edu"},
+           { name = "Jordan Faltys", email = "jfaltys@ua.edu"}]
+description = "Dynamic geospatial model of impact-generated crustal enrichment."
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "numpy",
+    "pandas",
+    "matplotlib",
+    "ease-grid"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
