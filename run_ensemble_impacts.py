@@ -15,12 +15,12 @@ import impacts
 ################
 ################
 ################
-SUB_FOLDER_NAME="march2022_5"
+SUB_FOLDER_NAME="july2025"
 
 
 #-----------------------------------------------------------------------------------
 # Loop through the ensemble members. Want to calculate the probabilities at each go.
-for ensemble_member in range(31,50):
+for ensemble_member in range(1,5):
 
     # Set the size bins
     max_diameter=330
@@ -159,9 +159,17 @@ for ensemble_member in range(31,50):
        
         for i_layer in range(n_layers_for_percent_volume):
             if it == 0:
-                percent_dict[i_layer] = pd.DataFrame(Impc.percent_volume_by_layer[i_layer], index=[it])
+                percent_dict[i_layer] = pd.DataFrame(
+                    Impc.percent_volume_by_layer[i_layer], index=[it]
+                )
             else:
-                percent_dict[i_layer] = percent_dict[i_layer].append(Impc.percent_volume_by_layer[i_layer], ignore_index=True)
+                new_row = pd.DataFrame(
+                    Impc.percent_volume_by_layer[i_layer], index=[it]
+                )
+                percent_dict[i_layer] = pd.concat(
+                    [percent_dict[i_layer], new_row],
+                    ignore_index=True
+                )
 
         if it in list_impacts_export:
             print('time', it)

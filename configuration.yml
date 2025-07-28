@@ -1,0 +1,39 @@
+# IMPAaCS configuration file
+
+# General settings
+verbose: false           # Enable verbose logging
+ensemble: 0              # Ensemble member index
+
+# Simulation settings
+simulation:
+  sim_time: 0            # Initial simulation time (years)
+  max_depth_of_impact_melt_km: 500
+
+# Grid settings
+grid:
+  lon_limits: [-180, 180]
+  lat_limits: [-45, 45]
+  z_discretized_km: 2     # Vertical resolution per layer (km)
+
+# Chemical state settings
+model:
+  primitive_initial_state: 45
+  fraction_upper_layer: 0.6666667   # Upper layer thickness fraction
+  target_SiO2: 62.58                # Sudbury reference (wt%)
+  upper_SiO2: 68.71                 # Sudbury upper layer (wt%)
+  proportion_melt_from_impact: 0.3333333
+  n_layers_impact_melt: 2
+  bound_sio2: false                 # Clamp SiO2 values to bounds
+  sio2_bounds:
+    min: 45
+    max: 80
+
+# Impact and testing
+impact:
+  consider_impact_angle: [1, 3]     # Random factor range for angle
+
+thresholds:
+  sio2_threshold: 58  # wt% threshold for crust identification
+
+test:
+  test_layers: 1     # Number of top layers to record for test cell
