@@ -116,7 +116,7 @@ class IMPAaCS:
         # record results
         self.results.times.append(self.config.sim_time)
         self.results.avg_targets.append(avg_tgt)
-        vol_stats = self.state.compute_volume_stats(
+        vol_stats = self.state.do_volume_by_layer(
             n_layers=geom.z_layers,
             sio2_threshold=self.config.sio2_threshold,
         )

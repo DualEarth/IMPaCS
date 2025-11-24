@@ -20,7 +20,7 @@ SUB_FOLDER_NAME="july2025"
 
 #-----------------------------------------------------------------------------------
 # Loop through the ensemble members. Want to calculate the probabilities at each go.
-for ensemble_member in range(1,5):
+for ensemble_member in range(180,200):
 
     # Set the size bins
     max_diameter=330
@@ -125,7 +125,8 @@ for ensemble_member in range(1,5):
                            lon_lims = [-impact_boundz, impact_boundz],      #
                            lat_lims = [-impact_boundz, impact_boundz],      #
                            bound_sio2=True,                                 #
-                           z_discretized_km=int(1))                         #
+                           z_discretized_km=int(1),
+                           sio2_threshold=56)                         #
     #=======================================================================#
     #=======================================================================#
 
@@ -179,7 +180,7 @@ for ensemble_member in range(1,5):
             print(Impc.test_time)
             print(Impc.average_test_target_list)
             print(Impc.top_layers_at_test_cell)
-            with open('impact_states/{}/{}/{}.pkl'.format(SUB_FOLDER_NAME, ensemble_member, it), 'wb') as fb:
+            with open('/media/volume/ml_ngen/impaacs/impact_states/{}/{}/{}.pkl'.format(SUB_FOLDER_NAME, ensemble_member, it), 'wb') as fb:
                 pkl.dump(Impc.grid_cell_state, fb, pkl.HIGHEST_PROTOCOL)
     
     for i_layer in range(12):

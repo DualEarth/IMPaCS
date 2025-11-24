@@ -10,15 +10,22 @@ class ImpactGeometry:
     crater_radius: float
     penetration_depth: float
     z_layers: int
+    max_layers: int
 
 
-def impact_dimensions(diameter: float, angle_range: tuple[float,float], 
-                      max_depth: float, dz: float) -> ImpactGeometry:
+def impact_dimensions(
+    diameter: float,
+    angle_range: tuple[float,float],
+    max_depth: float,
+    dz: float
+) -> ImpactGeometry:
     angle_factor = random.uniform(*angle_range)
-    crater_radius = 5 * diameter  # radius = (10*diameter)/2
+    crater_radius = 5 * diameter  # (10×diameter)/2
     penetration_depth = min(max_depth, angle_factor * diameter)
     z_layers = int(penetration_depth / dz)
-    return ImpactGeometry(crater_radius, penetration_depth, z_layers)
+    # this is the *absolute* max number of layers you ever have:
+    max_layers = int(max_depth / dz)
+    return ImpactGeometry(crater_radius, penetration_depth, z_layers, max_layers)
 
 def compute_fractionation(target: float, upper: float) -> float:
     return 1 - (target / upper)

@@ -48,4 +48,5 @@ def load_config(path: str) -> IMPAaCSConfig:
         consider_impact_angle = tuple(data['impact']['consider_impact_angle']),
         sio2_threshold = data['thresholds']['sio2_threshold'],
         test_layers = data['test']['test_layers'],
+        test_cell_location = data['test']['test_cell_location']
     )
