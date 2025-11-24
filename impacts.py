@@ -8,7 +8,9 @@ import matplotlib
 #matplotlib.use('Agg') # Must be before importing matplotlib.pyplot or pylab!
 import matplotlib.pyplot as plt
 from matplotlib import cm
+import matplotlib.ticker as mticker
 import random
+import pickle as pkl
 
 # approximate radius of earth in km
 def distance(lat1,lat2,lon1,lon2):
@@ -283,7 +285,172 @@ class IMPAaCS:
                 continue
 
     # ---------------------------------------------------------------------------------------------
-    def plot_map_and_bar(self, save_figure=False, plot_figure=False, fig_path='./', map_layers=[0], dist_layer=0, bound_plots=True):
+    def plot_3x3_map(self, ens1, ens2, ens3,
+                    save_figure=False, plot_figure=False,
+                    fig_path='./', map_layers=[0], dist_layer=0,
+                    bound_plots=True):
+
+        # Columns = ensembles
+        ensemble_ids = [ens1, ens2, ens3]
+
+        # Rows = timesteps (time downwards)
+        timesteps = [50, 100, 499]
+
+        zscalelow = 44
+        zscalehigh = 66
+
+        if not plot_figure and not save_figure:
+            return
+
+        # Create 3×3 layout
+        fig, axs = plt.subplots(3, 3, figsize=(7, 4.5))
+        plt.subplots_adjust(wspace=0.3, hspace=0.25)
+
+        def load_state(ens_id, t_myr):
+            """Load a state file for a specific ensemble + timestep."""
+            state_file = f"/media/volume/ml_ngen/impaacs/impact_states/july2025/{ens_id}/{t_myr}.pkl"
+            with open(state_file, "rb") as fb:
+                return pkl.load(fb)
+
+        def build_map():
+            """Build 2D SiO2 map array."""
+            z = np.zeros([self.n_x, self.n_y])
+            for i, ilon in enumerate(self.lon_subset):
+                for j, ilat in enumerate(self.lat_subset):
+                    grid_cell = f"{round(ilon,4)} {round(ilat,4)}"
+                    state_val = np.mean([self.grid_cell_state[grid_cell][i] for i in map_layers])
+                    z[i, j] = self.re_bin_sio2(state_val)
+            return z
+
+        # === LOOP: rows = times, columns = ensembles ===
+        for row, t in enumerate(timesteps):
+            for col, ens_id in enumerate(ensemble_ids):
+
+                # Load state for this timestep + ensemble
+                impact_states = load_state(ens_id, t)
+                self.grid_cell_state = impact_states
+                self.sim_time = t * 1_000_000
+
+                # Compute layer distribution (needed for titles, not plotted here)
+                self.do_volume_by_layer(n_layers=4)
+
+                # Build 2D map
+                Z = build_map()
+                X, Y = np.meshgrid(self.lon_subset, self.lat_subset)
+
+                ax = axs[row, col]
+
+                # Plot map
+                levels = np.arange(zscalelow, zscalehigh, 2)
+                cs = ax.contourf(X, Y, Z.T, levels=levels,
+                                cmap=plt.cm.get_cmap("jet", len(levels)))
+
+                # Column headers = ensemble IDs
+                if row == 0 and col == 0:
+                    ax.set_title(f"Ens {ens_id} (mean)")
+                if row == 0 and col == 1:
+                    ax.set_title(f"Ens {ens_id} (5th)")
+                if row == 0 and col == 2:
+                    ax.set_title(f"Ens {ens_id} (95th)")
+
+                # Row labels = time steps
+                if col == 0:
+                    ax.set_ylabel(f"{t} Myr", fontsize=12)
+
+                ax.set_xlim(self.lon_lims)
+                ax.set_ylim(self.lat_lims)
+                ax.set_xticks(np.arange(self.lon_lims[0], self.lon_lims[1], 10))
+                ax.set_yticks(np.arange(self.lat_lims[0], self.lat_lims[1], 10))
+
+                # Add colorbar only for last column
+                if col == len(ensemble_ids) - 1:
+                    fig.colorbar(cs, ax=ax)
+
+        # Save or show figure
+        if save_figure:
+            fig.savefig(f"{fig_path}/combined_sio2_progression.png",
+                        bbox_inches='tight', dpi=120)
+
+        if plot_figure:
+            plt.show()
+
+        plt.close()
+
+    # ---------------------------------------------------------------------------------------------
+    def plot_3x3_distributions(self, ens1, ens2, ens3,
+                            save_figure=False, plot_figure=False,
+                            fig_path='./', dist_layer=0,
+                            map_layers=[0]):
+
+        # Columns = ensembles
+        ensemble_ids = [ens1, ens2, ens3]
+
+        # Rows = timesteps (time downwards)
+        timesteps = [50, 100, 499]
+
+        if not plot_figure and not save_figure:
+            return
+
+        # Smaller figure, matching new map layout (7×4 inches)
+        fig, axs = plt.subplots(3, 3, figsize=(7, 4.5))
+        plt.subplots_adjust(wspace=0.3, hspace=0.25)
+
+        def load_state(ens_id, t_myr):
+            state_file = f"/media/volume/ml_ngen/impaacs/impact_states/july2025/{ens_id}/{t_myr}.pkl"
+            with open(state_file, "rb") as fb:
+                return pkl.load(fb)
+
+        # === LOOP: rows = times, columns = ensembles ===
+        for row, t in enumerate(timesteps):
+            for col, ens_id in enumerate(ensemble_ids):
+
+                # Load state for this timestep + ensemble
+                impact_states = load_state(ens_id, t)
+                self.grid_cell_state = impact_states
+                self.sim_time = t * 1_000_000
+
+                # Compute distribution
+                self.do_volume_by_layer(n_layers=4)
+
+                ax = axs[row, col]
+
+                # Extract distribution for selected layer
+                keys = list(self.percent_volume_by_layer[dist_layer].keys())   # SiO2 bins
+                vals = list(self.percent_volume_by_layer[dist_layer].values()) # Percent volumes
+
+                ax.bar(keys, vals, width=1.2)
+
+                # Column titles = ensemble quantile meaning
+                if row == 0:
+                    if col == 0:
+                        ax.set_title(f"Ens {ens_id} (mean)")
+                    elif col == 1:
+                        ax.set_title(f"Ens {ens_id} (5th)")
+                    elif col == 2:
+                        ax.set_title(f"Ens {ens_id} (95th)")
+
+                # Row label = timestep
+                if col == 0:
+                    ax.set_ylabel(f"{t} Myr", fontsize=12)
+
+                # Axis formatting
+                ax.set_xlabel("Surface SiO₂ content")
+                ax.set_ylim([0, 50])
+                ax.set_xlim([44, 66])
+                ax.set_xticks(range(44, 67, 5))
+
+        # Save/show output
+        if save_figure:
+            fig.savefig(f"{fig_path}/combined_sio2_distributions.png",
+                        bbox_inches='tight', dpi=120)
+
+        if plot_figure:
+            plt.show()
+
+        plt.close()
+
+    # ---------------------------------------------------------------------------------------------
+    def plot_map_and_bar(self, save_figure=False, plot_figure=False, fig_path='./', map_layers=[0], dist_layer=0):
         
         """
             Function for plotting 2D map of SiO2 States.
@@ -292,63 +459,64 @@ class IMPAaCS:
                 plot_figure=False
                 fig_path='./'
         """
-        
+        plt.rcParams.update({
+            "font.size": 10,
+            "axes.titlesize": 10,
+            "axes.labelsize": 10,
+            "xtick.labelsize": 10,
+            "ytick.labelsize": 10,
+            "legend.fontsize": 10,
+            "axes.titlepad": 4,
+            "axes.labelpad": 2,
+            "xtick.major.pad": 2,
+            "ytick.major.pad": 2
+        })
         if not plot_figure and not save_figure:
             print('not plotting figure')
             return
-
-        print(f"plotting SiO2  map for layers {[i for i in map_layers]}, and distribution for layer {dist_layer}")
-
+        print(f"plotting SiO2 map for layers {[i for i in map_layers]}, and distribution for layer {dist_layer}")
         z = np.zeros([self.n_x, self.n_y])
-        bar_list = []
         for i, ilon in enumerate(self.lon_subset):
             for j, ilat in enumerate(self.lat_subset):
                 grid_cell = str(round(ilon,4))+' '+str(round(ilat,4))
                 temp_state = np.mean([self.grid_cell_state[grid_cell][i] for i in map_layers])
                 temp_state = self.re_bin_sio2(temp_state)
                 z[i, j] = temp_state
-        
         X, Y = np.meshgrid(self.lon_subset, self.lat_subset)
-        
-        fig = plt.figure(figsize=(12, 7))
-
-        grid = plt.GridSpec(1, 7, wspace = .1, hspace = .1)
-        plt.subplots_adjust(wspace= 0.1, hspace= 0.1)
-
-        plt.subplot(grid[0, :5])
-        
-        if bound_plots:
-            levels = np.arange(40, 70, 2)
+        fig = plt.figure(figsize=(6.5, 3))
+        plt.subplots_adjust(left=0.001, right=0.999, bottom=0.01, top=0.99)
+        grid = plt.GridSpec(1, 30, wspace=0.01, hspace=0.01)
+        plt.subplot(grid[0, :22])
         cmap = cm.jet
+        levels = np.arange(44, 64, 2)
         cs = plt.contourf(X, Y, np.transpose(z), levels, cmap=cm.get_cmap(cmap, len(levels) - 1)) 
-        if bound_plots:
-            cbar = fig.colorbar(cs, ticks=range(40,70,2))
-        else:
-            cbar = fig.colorbar(cs)
-
-        plt.title('Surface SiO2 content at {}myr, layers {}'.format(int(self.sim_time/1000000), map_layers))
+        cbar = fig.colorbar(cs, pad=0.01)
+        plt.title(f'Surface SiO2 % at {int(self.sim_time/1000000)}myr')
         plt.xlabel('longitude')
         plt.ylabel('latitude')
-        if bound_plots:
-            plt.xlim(self.lon_lims)
-            plt.ylim(self.lat_lims)
-            plt.xticks(np.arange(self.lon_lims[0], self.lat_lims[1], 10))
-        
-        plt.subplot(grid[0, 5:])
-        plt.bar(list(self.percent_volume_by_layer[dist_layer].keys()), list(self.percent_volume_by_layer[dist_layer].values()), width=1.2)
-        if bound_plots:
-            plt.xlim([40,70])
-            plt.ylim([0,50])
-            plt.xticks(np.arange(40, 70, 5))
-        plt.xlabel('Surface SiO2 content')
-        plt.ylabel(f'Percent volume for layer {dist_layer}')
+        ax = plt.subplot(grid[0, 22:])
+        ax.bar(
+            list(self.percent_volume_by_layer[dist_layer].keys()),
+            list(self.percent_volume_by_layer[dist_layer].values()),
+            width=1.2
+        )
+        ax.set_xlabel('Surface SiO2 %')
+        ax.set_title('PDF')
+        ax.yaxis.tick_right()
+        ax.yaxis.set_label_position("right")
+        ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, pos: v / 100))
+        ax.set_ylim(0, 40)
+        ax.set_yticks([0, 10, 20, 30, 40])
         if save_figure:
-            plt.savefig(fig_path+'{}myr.png'.format(int(self.sim_time/1000000)), 
-                    bbox_inches='tight', dpi = 100)
+            plt.savefig(
+                fig_path + '{}myr.png'.format(int(self.sim_time/1000000)),
+                bbox_inches='tight',
+                dpi=100
+            )
         if plot_figure:
             plt.show()
         plt.close()
-        
+
 
     # ---------------------------------------------------------------------------------------------
     def calculate_relative_percent_crust_vol_multiplier(self):

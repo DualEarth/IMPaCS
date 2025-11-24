@@ -15,12 +15,12 @@ import impacts
 ################
 ################
 ################
-SUB_FOLDER_NAME="march2022_5"
+SUB_FOLDER_NAME="july2025"
 
 
 #-----------------------------------------------------------------------------------
 # Loop through the ensemble members. Want to calculate the probabilities at each go.
-for ensemble_member in range(31,50):
+for ensemble_member in range(180,200):
 
     # Set the size bins
     max_diameter=330
@@ -125,7 +125,8 @@ for ensemble_member in range(31,50):
                            lon_lims = [-impact_boundz, impact_boundz],      #
                            lat_lims = [-impact_boundz, impact_boundz],      #
                            bound_sio2=True,                                 #
-                           z_discretized_km=int(1))                         #
+                           z_discretized_km=int(1),
+                           sio2_threshold=56)                         #
     #=======================================================================#
     #=======================================================================#
 
@@ -159,9 +160,17 @@ for ensemble_member in range(31,50):
        
         for i_layer in range(n_layers_for_percent_volume):
             if it == 0:
-                percent_dict[i_layer] = pd.DataFrame(Impc.percent_volume_by_layer[i_layer], index=[it])
+                percent_dict[i_layer] = pd.DataFrame(
+                    Impc.percent_volume_by_layer[i_layer], index=[it]
+                )
             else:
-                percent_dict[i_layer] = percent_dict[i_layer].append(Impc.percent_volume_by_layer[i_layer], ignore_index=True)
+                new_row = pd.DataFrame(
+                    Impc.percent_volume_by_layer[i_layer], index=[it]
+                )
+                percent_dict[i_layer] = pd.concat(
+                    [percent_dict[i_layer], new_row],
+                    ignore_index=True
+                )
 
         if it in list_impacts_export:
             print('time', it)
@@ -171,7 +180,7 @@ for ensemble_member in range(31,50):
             print(Impc.test_time)
             print(Impc.average_test_target_list)
             print(Impc.top_layers_at_test_cell)
-            with open('impact_states/{}/{}/{}.pkl'.format(SUB_FOLDER_NAME, ensemble_member, it), 'wb') as fb:
+            with open('/media/volume/ml_ngen/impaacs/impact_states/{}/{}/{}.pkl'.format(SUB_FOLDER_NAME, ensemble_member, it), 'wb') as fb:
                 pkl.dump(Impc.grid_cell_state, fb, pkl.HIGHEST_PROTOCOL)
     
     for i_layer in range(12):
