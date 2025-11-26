@@ -9,7 +9,7 @@ dependencies:
   - matplotlib>=3.4
   - pyyaml>=5.4
   - pip
-
-  # any pure‐Python packages not available on conda
+  - scipy
+  
   - pip:
     - ease_grid

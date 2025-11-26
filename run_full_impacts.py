@@ -43,7 +43,7 @@ with pd.option_context('display.max_rows', None, 'display.max_columns', None):  
     print(df_freq)
 
 
-t_total=500
+t_total=501
 
 fivehundredmillion = 500000000
 freq_factor = fivehundredmillion/t_total
@@ -88,9 +88,10 @@ with pd.option_context('display.max_rows', None, 'display.max_columns', None):  
     print(df_freq)
 impact_time = np.linspace(0,fivehundredmillion,t_total+1)[1:]
 df = pd.DataFrame(data=hits, index=impact_time)
-
+list_impacts_export = list(range(0,500,100))
+list_impacts_export.extend([1,2,3,4,5,10,50, 499, 500])
 ensemble_member=1
-I = impacts.IMPAaCS(egrid, ensemble=ensemble_member, verbose=True)
+I = impacts.IMPAaCS(egrid, ensemble=ensemble_member, verbose=False)
 # Loop through impacts, the df has them stored by time and diameter bn
 for it, t in enumerate(df.index.values):
     print('time', it)
@@ -109,10 +110,9 @@ for it, t in enumerate(df.index.values):
 
     # make a map of the results at this time
 #    I.plot_map()
-
-    with open('impact_states/impacts_10min_45lat_t{}.pkl'.format(it), 'wb') as f:
-        pkl.dump(I.grid_cell_state, f, pkl.HIGHEST_PROTOCOL)
+    if it in list_impacts_export:
+        with open(f'/mnt/d/impaacs/impact_states/impacts_ens{ensemble_member}_t{it}.pkl', 'wb') as f:
+            pkl.dump(I.grid_cell_state, f, pkl.HIGHEST_PROTOCOL)
 
 print(I.test_time)
 print(I.average_test_target_list)
-print(I.top_layer_at_test_cell)

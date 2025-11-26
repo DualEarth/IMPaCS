@@ -483,10 +483,11 @@ class IMPAaCS:
                 temp_state = self.re_bin_sio2(temp_state)
                 z[i, j] = temp_state
         X, Y = np.meshgrid(self.lon_subset, self.lat_subset)
-        fig = plt.figure(figsize=(6.5, 3))
+        fig = plt.figure(figsize=(6.5, 1.25))
         plt.subplots_adjust(left=0.001, right=0.999, bottom=0.01, top=0.99)
         grid = plt.GridSpec(1, 30, wspace=0.01, hspace=0.01)
-        plt.subplot(grid[0, :22])
+        P=26
+        plt.subplot(grid[0, :P])
         cmap = cm.jet
         levels = np.arange(44, 64, 2)
         cs = plt.contourf(X, Y, np.transpose(z), levels, cmap=cm.get_cmap(cmap, len(levels) - 1)) 
@@ -494,7 +495,7 @@ class IMPAaCS:
         plt.title(f'Surface SiO2 % at {int(self.sim_time/1000000)}myr')
         plt.xlabel('longitude')
         plt.ylabel('latitude')
-        ax = plt.subplot(grid[0, 22:])
+        ax = plt.subplot(grid[0, P:])
         ax.bar(
             list(self.percent_volume_by_layer[dist_layer].keys()),
             list(self.percent_volume_by_layer[dist_layer].values()),
@@ -505,8 +506,9 @@ class IMPAaCS:
         ax.yaxis.tick_right()
         ax.yaxis.set_label_position("right")
         ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, pos: v / 100))
-        ax.set_ylim(0, 40)
-        ax.set_yticks([0, 10, 20, 30, 40])
+        ax.set_ylim(0, 100)
+        ax.set_xlim(44, 68)
+        ax.set_yticks([0, 10, 20, 30, 40, 50, 60, 70, 80, 90])
         if save_figure:
             plt.savefig(
                 fig_path + '{}myr.png'.format(int(self.sim_time/1000000)),
